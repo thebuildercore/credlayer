@@ -1,2 +1,9 @@
 /.env
 /node_modules
+
+# Hardhat compilation files
+artifacts/
+cache/
+types/
+typechain-types/
+
