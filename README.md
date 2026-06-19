@@ -21,7 +21,6 @@ To run all the tests in the project, execute the following command:
 
 ```shell
 npx hardhat test
-```
 
 You can also selectively run the Solidity or `mocha` tests:
 
