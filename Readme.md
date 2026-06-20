@@ -72,6 +72,17 @@ CredLayerTrust.sol          // Core contract combining:
   - Identity Registry       // DID anchoring and profiles
   - Reputation Registry     // Trust scores with metadata
   - Credential Registry     // Document hash verification
+
+  ✅ Transaction sent to mempool!
+🔗 Hash: 0x59beb93be52e6b2c1cb6ac28fbc3be797ccec0d9a844cb53c0462e5f3b55f7b8
+⏳ Waiting for block confirmation (Do not close)...
+🎉 SUCCESS! The node accepted and mined it.
+
+🚀 DEPLOYMENT 100% SUCCESSFUL!
+--------------------------------------------------
+📜 Contract Address: 0x21D7912FF655a28B185d183b5c7F2DD310ac410D
+🌐 Network: 0G Galileo Testnet
+--------------------------------------------------
 ```
 
 **Deployed on**: 0G Chain Galileo Testnet  
