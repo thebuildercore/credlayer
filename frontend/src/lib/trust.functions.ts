@@ -13,18 +13,22 @@ const analyzeInput = z.object({
 export const analyzeWallet = createServerFn({ method: "POST" })
   .inputValidator((d) => analyzeInput.parse(d))
   .handler(async ({ data }) => {
-    const wallet = data.wallet.toLowerCase() as `0x${string}`;
+    try {
+      console.log("Starting analyzeWallet for:", data.wallet);
+      const wallet = data.wallet.toLowerCase() as `0x${string}`;
 
-    const RPC =
-      process.env.NEXT_PUBLIC_0G_RPC_URL || "https://evmrpc-testnet.0g.ai";
-    const provider = new ethers.JsonRpcProvider(RPC);
+      const req = new ethers.FetchRequest("https://35.197.33.167/");
+      req.setHeader("Host", "evmrpc-testnet.0g.ai");
+      const provider = new ethers.JsonRpcProvider(req, 16601, { staticNetwork: true });
 
     // 1. Pull live on-chain activity context for the wallet from 0G Chain.
-    const [balance, txCount, block] = await Promise.all([
-      provider.getBalance(wallet),
-      provider.getTransactionCount(wallet),
-      provider.getBlockNumber(),
-    ]);
+      console.log("Fetching on-chain context...");
+      const [balance, txCount, block] = await Promise.all([
+        provider.getBalance(wallet),
+        provider.getTransactionCount(wallet),
+        provider.getBlockNumber(),
+      ]);
+      console.log("Context fetched:", { balance, txCount, block });
 
     const walletData = {
       address: wallet,
@@ -34,9 +38,11 @@ export const analyzeWallet = createServerFn({ method: "POST" })
       observedAtBlock: block,
     };
 
-    // 2. Run real inference on 0G Compute.
-    const { runInference } = await import("./zg-compute.server");
-    const inference = await runInference(wallet, walletData);
+      // 2. Run real inference on 0G Compute.
+      console.log("Running 0G Compute inference...");
+      const { runInference } = await import("./zg-compute.server");
+      const inference = await runInference(wallet, walletData);
+      console.log("Inference complete. Job ID:", inference.jobId);
 
     // 3. Store the full report on 0G Storage.
     const { uploadFile } = await import("./zg-storage.server");
@@ -51,51 +57,65 @@ export const analyzeWallet = createServerFn({ method: "POST" })
       },
       report: inference.parsed,
     });
-    const reportBytes = new TextEncoder().encode(reportJson);
-    const reportHash = ethers.keccak256(reportBytes) as `0x${string}`;
-    const upload = await uploadFile(reportBytes, `trust-${wallet}.json`);
-    const storageURI = `0g://${upload.rootHash}`;
+      const reportBytes = new TextEncoder().encode(reportJson);
+      const reportHash = ethers.keccak256(reportBytes) as `0x${string}`;
+      console.log("Uploading report to 0G Storage...");
+      const upload = await uploadFile(reportBytes, `trust-${wallet}.json`);
+      const storageURI = `0g://${upload.rootHash}`;
+      console.log("Storage complete. RootHash:", upload.rootHash);
 
-    // 4. Anchor on 0G Chain via the ReputationRegistry contract.
-    const RR_ADDR = process.env.NEXT_PUBLIC_CONTRACT_REPUTATION as `0x${string}` | undefined;
-    let onChainTx: string | null = null;
-    if (RR_ADDR) {
-      const { ReputationRegistryABI } = await import("@/contracts");
-      const pk = process.env.ZG_COMPUTE_PRIVATE_KEY!;
-      const wallet2 = new ethers.Wallet(pk, provider);
-      const c = new ethers.Contract(RR_ADDR, ReputationRegistryABI as any, wallet2);
-      const tx = await c.updateReputation(
+      // 4. Anchor on 0G Chain via the ReputationRegistry contract.
+      const RR_ADDR = process.env.VITE_CONTRACT_REPUTATION as `0x${string}` | undefined;
+      console.log("Anchoring reputation. Contract addr:", RR_ADDR);
+      let onChainTx: string | null = null;
+      if (RR_ADDR) {
+        const { ReputationRegistryABI } = await import("@/contracts");
+        const pk = process.env.ZG_COMPUTE_PRIVATE_KEY!;
+        if (!pk) throw new Error("ZG_COMPUTE_PRIVATE_KEY is missing");
+        console.log("Executing contract call...");
+        const wallet2 = new ethers.Wallet(pk, provider);
+        const c = new ethers.Contract(RR_ADDR, ReputationRegistryABI as any, wallet2);
+        const tx = await c.anchorReputation(
+          wallet,
+          Math.max(0, Math.min(1000, Math.round(inference.parsed.trustScore))),
+          Math.max(0, Math.min(100, Math.round(inference.parsed.confidence))),
+          inference.parsed.riskLevel,
+          upload.rootHash,
+        );
+        console.log("Tx sent:", tx.hash, "waiting for confirmation...");
+        const rcpt = await tx.wait();
+        onChainTx = rcpt?.hash ?? tx.hash;
+        console.log("Anchor confirmed:", onChainTx);
+      }
+
+      return {
         wallet,
-        Math.max(0, Math.min(1000, Math.round(inference.parsed.trustScore))),
-        reportHash,
-        storageURI,
-      );
-      const rcpt = await tx.wait();
-      onChainTx = rcpt?.hash ?? tx.hash;
+        generatedAt: new Date().toISOString(),
+        report: inference.parsed,
+        compute: {
+          provider: inference.providerAddress,
+          model: inference.model,
+          jobId: inference.jobId,
+          endpoint: inference.endpoint,
+        },
+        storage: {
+          rootHash: upload.rootHash,
+          storageURI,
+          txHash: upload.txHash,
+          size: upload.size,
+          reportHash,
+        },
+        chain: {
+          contract: RR_ADDR ?? null,
+          txHash: onChainTx,
+        },
+      };
+    } catch (e: any) {
+      console.error("\n=== ANALYZE WALLET FAILED ===");
+      console.error(e?.message ?? e);
+      if (e?.response) console.error("Response:", e.response?.data || await e.response?.text?.());
+      throw e;
     }
-
-    return {
-      wallet,
-      generatedAt: new Date().toISOString(),
-      report: inference.parsed,
-      compute: {
-        provider: inference.providerAddress,
-        model: inference.model,
-        jobId: inference.jobId,
-        endpoint: inference.endpoint,
-      },
-      storage: {
-        rootHash: upload.rootHash,
-        storageURI,
-        txHash: upload.txHash,
-        size: upload.size,
-        reportHash,
-      },
-      chain: {
-        contract: RR_ADDR ?? null,
-        txHash: onChainTx,
-      },
-    };
   });
 
 export type AnalyzeResult = Awaited<ReturnType<typeof analyzeWallet>>;

@@ -51,7 +51,7 @@ function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <TrustScoreCard address={address} />
         <VerificationStatusCard address={address} />
-        <CredentialCountCard address={address} />
+        {/* <CredentialCountCard address={address} /> */}
         <ActivityCard address={address} />
       </div>
 
@@ -98,7 +98,7 @@ function TrustScoreCard({ address }: { address?: `0x${string}` }) {
   const { data, isLoading, error } = useReadContract({
     abi: ReputationRegistryABI,
     address: CONTRACT_ADDRESSES.reputation || undefined,
-    functionName: "getTrustScore",
+    functionName: "getFullTrustProfile",
     args: address ? [address] : undefined,
     query: { enabled },
   });
@@ -113,9 +113,13 @@ function TrustScoreCard({ address }: { address?: `0x${string}` }) {
     );
   }
   if (isLoading) return <StatCard icon={Gauge} label="Trust Score" value="…" />;
-  if (error)
+  if (error) {
+    if ((error as Error).message.includes("Subject profile does not exist yet")) {
+      return <StatCard icon={Gauge} label="Trust Score" value="N/A" sub="Run AI Analysis to verify" tone="warning" />;
+    }
     return <StatCard icon={Gauge} label="Trust Score" value="!" sub="Read failed" tone="warning" />;
-  const score = data ? Number((data as any)[0]) : 0;
+  }
+  const score = data ? Number((data as any)[1]) : 0;
   return (
     <StatCard
       icon={Gauge}
@@ -131,7 +135,7 @@ function VerificationStatusCard({ address }: { address?: `0x${string}` }) {
   const { data, isLoading } = useReadContract({
     abi: ReputationRegistryABI,
     address: CONTRACT_ADDRESSES.reputation || undefined,
-    functionName: "getTrustScore",
+    functionName: "getFullTrustProfile",
     args: address ? [address] : undefined,
     query: { enabled },
   });
@@ -146,7 +150,7 @@ function VerificationStatusCard({ address }: { address?: `0x${string}` }) {
       />
     );
   }
-  const verified = data && Number((data as any)[0]) > 0;
+  const verified = data && Number((data as any)[1]) > 0;
   return (
     <StatCard
       icon={ShieldCheck}
@@ -159,30 +163,12 @@ function VerificationStatusCard({ address }: { address?: `0x${string}` }) {
 }
 
 function CredentialCountCard({ address }: { address?: `0x${string}` }) {
-  const enabled = !!address && !!CONTRACT_ADDRESSES.credential;
-  const { data, isLoading } = useReadContract({
-    abi: CredentialRegistryABI,
-    address: CONTRACT_ADDRESSES.credential || undefined,
-    functionName: "credentialCount",
-    args: address ? [address] : undefined,
-    query: { enabled },
-  });
-  if (!CONTRACT_ADDRESSES.credential) {
-    return (
-      <StatCard
-        icon={FileCheck2}
-        label="Credentials"
-        value="—"
-        sub="CredentialRegistry not deployed"
-      />
-    );
-  }
   return (
     <StatCard
       icon={FileCheck2}
       label="Credentials"
-      value={isLoading ? "…" : String(data ?? 0)}
-      sub="Anchored on 0G Chain"
+      value="N/A"
+      sub="Unavailable in V2"
       tone="accent"
     />
   );
@@ -213,7 +199,7 @@ function TrustTrend({ address }: { address?: `0x${string}` }) {
         ReputationRegistryABI as any,
         provider,
       );
-      const filter = c.filters.ReputationUpdated(address);
+      const filter = c.filters.ReputationAnchored(address);
       const logs = await c.queryFilter(filter, -50_000);
       return logs.map((l: any) => ({
         block: l.blockNumber,
@@ -233,7 +219,7 @@ function TrustTrend({ address }: { address?: `0x${string}` }) {
           <h2 className="mt-1 font-display text-xl font-semibold">On-chain history</h2>
         </div>
         <div className="text-xs text-muted-foreground">
-          Source: ReputationRegistry events
+          Source: ReputationAnchored events
         </div>
       </div>
 

@@ -52,12 +52,30 @@ function CredentialsPage() {
       const tx = await writeContractAsync({
         abi: CredentialRegistryABI,
         address: CONTRACT_ADDRESSES.credential,
-        functionName: "registerCredential",
+        functionName: "anchorCredential",
         args: [c.credentialHash, c.storageURI],
       });
       toast.success("Anchored on 0G Chain", { description: tx });
     } catch (e: any) {
       toast.error("Anchor failed", { description: e?.shortMessage ?? e?.message });
+    }
+  }
+
+  async function revoke(c: CredentialUpload) {
+    if (!CONTRACT_ADDRESSES.credential) {
+      toast.error("CredentialRegistry not configured");
+      return;
+    }
+    try {
+      const tx = await writeContractAsync({
+        abi: CredentialRegistryABI,
+        address: CONTRACT_ADDRESSES.credential,
+        functionName: "revokeCredential",
+        args: [c.credentialHash],
+      });
+      toast.success("Revocation initiated", { description: tx });
+    } catch (e: any) {
+      toast.error("Revoke failed", { description: e?.shortMessage ?? e?.message });
     }
   }
 
@@ -152,6 +170,14 @@ function CredentialsPage() {
                     onClick={() => anchor(c)}
                   >
                     Anchor on-chain
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={isAnchoring}
+                    onClick={() => revoke(c)}
+                  >
+                    Revoke
                   </Button>
                 </div>
               </div>

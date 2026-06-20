@@ -13,15 +13,16 @@ function ReputationPage() {
   const { data, isLoading, error } = useReadContract({
     abi: ReputationRegistryABI,
     address: CONTRACT_ADDRESSES.reputation || undefined,
-    functionName: "getTrustScore",
+    functionName: "getFullTrustProfile",
     args: address ? [address] : undefined,
     query: { enabled: !!address && !!CONTRACT_ADDRESSES.reputation },
   });
 
-  const score = data ? Number((data as any)[0]) : 0;
-  const updatedAt = data ? Number((data as any)[1]) : 0;
-  const reportHash = data ? ((data as any)[2] as string) : "";
-  const storageURI = data ? ((data as any)[3] as string) : "";
+  const score = data ? Number((data as any)[1]) : 0;
+  const confidence = data ? Number((data as any)[2]) : 0;
+  const riskLevel = data ? ((data as any)[3] as string) : "";
+  const storageRoot = data ? ((data as any)[4] as string) : "";
+  const updatedAt = data ? Number((data as any)[5]) : 0;
 
   return (
     <div className="space-y-6">
@@ -42,7 +43,9 @@ function ReputationPage() {
         <div className="glass-panel h-64 animate-pulse" />
       ) : error ? (
         <div className="glass-panel p-6 text-sm text-destructive">
-          {(error as Error).message}
+          {(error as Error).message.includes("Subject profile does not exist yet")
+            ? "Your wallet is not verified yet. Navigate to the AI Analysis tab to generate and anchor your trust profile."
+            : (error as Error).message}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-3">
@@ -60,11 +63,14 @@ function ReputationPage() {
             <Row label="Updated">
               {updatedAt ? new Date(updatedAt * 1000).toLocaleString() : "—"}
             </Row>
-            <Row label="Report hash">
-              <code className="break-all font-mono text-xs">{reportHash || "—"}</code>
+            <Row label="Risk Level">
+              <code className="break-all font-mono text-xs">{riskLevel || "—"}</code>
             </Row>
-            <Row label="Storage URI">
-              <code className="break-all font-mono text-xs">{storageURI || "—"}</code>
+            <Row label="Confidence">
+              <code className="break-all font-mono text-xs">{confidence ? `${confidence}%` : "—"}</code>
+            </Row>
+            <Row label="Storage Root">
+              <code className="break-all font-mono text-xs">{storageRoot || "—"}</code>
             </Row>
             <Row label="Contract">
               <code className="break-all font-mono text-xs">{CONTRACT_ADDRESSES.reputation}</code>
