@@ -46,7 +46,7 @@ function getSigner() {
   }
   const req = new ethers.FetchRequest("https://35.197.33.167/");
   req.setHeader("Host", "evmrpc-testnet.0g.ai");
-  const provider = new ethers.JsonRpcProvider(req, 16601, { staticNetwork: true });
+  const provider = new ethers.JsonRpcProvider(req, 16602, { staticNetwork: true });
   return new ethers.Wallet(pk, provider);
 }
 

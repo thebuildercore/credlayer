@@ -19,7 +19,7 @@ export const analyzeWallet = createServerFn({ method: "POST" })
 
       const req = new ethers.FetchRequest("https://35.197.33.167/");
       req.setHeader("Host", "evmrpc-testnet.0g.ai");
-      const provider = new ethers.JsonRpcProvider(req, 16601, { staticNetwork: true });
+      const provider = new ethers.JsonRpcProvider(req, 16602, { staticNetwork: true });
 
     // 1. Pull live on-chain activity context for the wallet from 0G Chain.
       console.log("Fetching on-chain context...");
@@ -32,7 +32,7 @@ export const analyzeWallet = createServerFn({ method: "POST" })
 
     const walletData = {
       address: wallet,
-      chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 16601),
+      chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 16602),
       balanceWei: balance.toString(),
       transactionCount: txCount,
       observedAtBlock: block,

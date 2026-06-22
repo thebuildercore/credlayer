@@ -47,7 +47,7 @@ Wallet Activity → 0G Compute (AI) → 0G Storage (Report) → 0G Chain (Anchor
 ## 🏗️ Architecture
 
 ### Tech Stack
-- **Smart Contracts**: Solidity on 0G Chain (Galileo Testnet - Chain ID: 16601)
+- **Smart Contracts**: Solidity on 0G Chain (Galileo Testnet - Chain ID: 16602)
 - **Frontend**: React 19, TanStack Start (SSR), TailwindCSS, Framer Motion
 - **Web3**: wagmi, viem, RainbowKit
 - **Storage**: 0G Storage SDK with Merkle proof verification
@@ -86,7 +86,7 @@ CredLayerTrust.sol          // Core contract combining:
 ```
 
 **Deployed on**: 0G Chain Galileo Testnet  
-**Chain ID**: 16601  
+**Chain ID**: 16602  
 **Explorer**: [chainscan-galileo.0g.ai](https://chainscan-galileo.0g.ai)
 
 ---

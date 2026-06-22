@@ -14,7 +14,7 @@ globalThis.fetch = function(url, options) {
 
 async function main() {
   const brokerMod = await import('@0glabs/0g-serving-broker');
-  const provider = new ethers.JsonRpcProvider("https://evmrpc-testnet.0g.ai", 16601, { staticNetwork: true });
+  const provider = new ethers.JsonRpcProvider("https://evmrpc-testnet.0g.ai", 16602, { staticNetwork: true });
   const pk = process.env.ZG_COMPUTE_PRIVATE_KEY.startsWith('0x') ? process.env.ZG_COMPUTE_PRIVATE_KEY : '0x' + process.env.ZG_COMPUTE_PRIVATE_KEY;
   const signer = new ethers.Wallet(pk, provider);
   const createBroker = brokerMod.createZGComputeNetworkBroker ?? brokerMod.createBroker;

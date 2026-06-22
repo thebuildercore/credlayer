@@ -57,7 +57,7 @@ IdentityRegistry.sol      // DID anchoring and profile management
 CredentialRegistry.sol    // Document hash verification
 ```
 
-**Chain ID**: 16601  
+**Chain ID**: 16602  
 **Explorer**: [chainscan-galileo.0g.ai](https://chainscan-galileo.0g.ai)
 
 ### Tech Stack
@@ -123,7 +123,7 @@ npm run dev
 ### Deploy Smart Contracts
 ```bash
 cd services/contracts
-# Deploy to 0G Galileo testnet (chain ID 16601)
+# Deploy to 0G Galileo testnet (chain ID 16602)
 # Update contract addresses in src/contracts/index.ts
 ```
 
